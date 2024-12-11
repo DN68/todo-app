@@ -48,6 +48,7 @@ export default function TodoList({
               <button
                 onClick={() => openEditPopup(todo, index)}
                 className="bg-yellow-500 text-white px-2 ml-2 py-1 rounded"
+                disabled = {todo.completed} // disable edit neu completed task
               >
                 Edit
               </button>
