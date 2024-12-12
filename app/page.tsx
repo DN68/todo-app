@@ -27,7 +27,7 @@ const todoReducer = (state: Todo[], action: Action): Todo[] => {
     case "add":
       return [...state, action.payload.todo];
     case "delete":
-      return state.filter((_, id) => id !== action.payload.id);
+      return state.filter((todo) => todo.id !== action.payload.id);
     case "complete":
       return state.map((todo, id) =>
         id === action.payload.id
@@ -50,7 +50,8 @@ export default function Home() {
   const [todos, dispatch] = useReducer(todoReducer, []);
   const [isEditPopupOpen, setIsEditPopupOpen] = useState(false); //quan ly trang thai popup edit, mac dinh la false (dong)
   const [editingTodo, setEditingTodo] = useState(null); // luu Todo dang chinh sua
-
+  const [currentPage, setCurrentPage] = useState(1); // Quản lý trang hiện tại
+  const todosPerPage = 5; // Số task trên mỗi trang
   //GET todo
   useEffect(() => {
     fetch("https://dummyjson.com/todos")
@@ -75,14 +76,23 @@ export default function Home() {
 
   // delete todo
   const deleteTodo = (id: number) => {
-    
-    fetch(`https://dummyjson.com/todos/${id}`, {
+    console.log(id);
+    fetch(`https://dummyjson.com/todos/7`, {
       method: "DELETE",
     }).then(() => {
       dispatch({ type: "delete", payload: { id } });
+      // Nếu xóa task và không còn task nào ở trang hiện tại,
+      // tự động chuyển về trang trước đó
+      const remainingTodos = todos.filter((todo) => todo.id !== id);
+      if (
+        currentPage > 1 &&
+        remainingTodos.slice(indexOfFirstTodo, indexOfLastTodo).length === 0
+      ) {
+        paginate(currentPage - 1);
+      }
     });
   };
-
+  //complete todo
   const completeTodo = (id: number) => {
     const todo = todos.find((todo) => todo.id === id + 1);
     if (!todo) return;
@@ -131,7 +141,13 @@ export default function Home() {
     }
   };
 
-  
+  // Tính toán index cho task trong trang hiện tại
+  const indexOfLastTodo = currentPage * todosPerPage;
+  const indexOfFirstTodo = indexOfLastTodo - todosPerPage;
+  const currentTodos = todos.slice(indexOfFirstTodo, indexOfLastTodo);
+
+  // Hàm chuyển trang
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div>
@@ -139,13 +155,31 @@ export default function Home() {
           <h1 className="text-2xl font-bold mb-4">Todo App</h1>
           <AddTodo addTodo={addTodo} />
           <TodoList
-            todos={todos}
+            todos={currentTodos}
             deleteTodo={deleteTodo}
             completeTodo={completeTodo} // truyen ham completeTodo vao TodoList
             openEditPopup={openEditPopup} // truyen ham  popup vao TodoList
           />
         </div>
-       
+        {/* Pagination */}
+        <div className="flex justify-center mt-4">
+          {Array.from(
+            { length: Math.ceil(todos.length / todosPerPage) }, // Tổng số trang
+            (_, index) => (
+              <button
+                key={index + 1}
+                onClick={() => paginate(index + 1)}
+                className={`mx-1 px-3 py-1 rounded ${
+                  currentPage === index + 1
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-300"
+                }`}
+              >
+                {index + 1}
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       {/* Popup Edit */}

@@ -38,6 +38,7 @@ export default function TodoList({
         {/* Duyet qua todos và hien thi tung todo */}
 
         {todos.map((todo, id) => (
+          
           <li
             key={id}
             className={`flex justify-between items-center p-2  bg-white flex-1 overflow-hidden`}
@@ -70,7 +71,7 @@ export default function TodoList({
               </button>
               {/* Nut Delete  */}
               <button
-                onClick={() => deleteTodo(id)}
+                onClick={() => deleteTodo(todo.id)}
                 className="bg-red-500 text-white px-2 py-1 rounded"
               >
                 Delete
