@@ -1,35 +1,46 @@
 "use client";
 
-import { useState, useReducer } from "react";
+import { useState, useReducer, useEffect } from "react";
 import AddTodo from "./components/AddTodo";
 import TodoList from "./components/TodoList";
+import { useRouter, useSearchParams } from "next/navigation"; // Sử dụng các hook của Next.js
+
+interface Todo {
+  id: number;
+  todo: string;
+  completed: boolean;
+  userId: number;
+}
+
+type Action =
+  | { type: "add"; payload: { todo: Todo } }
+  | { type: "delete"; payload: { id: number } }
+  | { type: "complete"; payload: { id: number } }
+  | { type: "edit"; payload: { todo: string; id: number } }
+  | { type: "set"; payload: { todos: Todo[] } };
 
 //Reducer để xử lý các action và cập nhật state
-const todoReducer = (state, action) => {
+const todoReducer = (state: Todo[], action: Action): Todo[] => {
   switch (action.type) {
+    case "set":
+      return action.payload.todos;
     case "add":
-      return [
-        ...state,
-        {
-          text: action.payload.text,
-          completed: false,
-        },
-      ];
+      return [...state, action.payload.todo];
     case "delete":
-      return state.filter((_, index) => index !== action.payload.index);
+      return state.filter((_, id) => id !== action.payload.id);
     case "complete":
-      return state.map((todo, index) =>
-        index === action.payload.index
+      return state.map((todo, id) =>
+        id === action.payload.id
           ? { ...todo, completed: !todo.completed }
           : todo
       );
     case "edit":
-      return state.map((todo, index) =>
-        index === action.payload.index
-          ? { ...todo, text: action.payload.text ? `${action.payload.text}` : `${todo.text}` }
+      return state.map((todo) =>
+        todo.id === action.payload.id
+          ? { ...todo, todo: action.payload.todo }
           : todo
       );
-      
+
     default:
       return state;
   }
@@ -40,32 +51,71 @@ export default function Home() {
   const [isEditPopupOpen, setIsEditPopupOpen] = useState(false); //quan ly trang thai popup edit, mac dinh la false (dong)
   const [editingTodo, setEditingTodo] = useState(null); // luu Todo dang chinh sua
 
+  //GET todo
+  useEffect(() => {
+    fetch("https://dummyjson.com/todos")
+      .then((res) => res.json())
+      .then((data) => {
+        dispatch({ type: "set", payload: { todos: data.todos } });
+      });
+  }, []);
+
   // add todo
-  const addTodo = (text) => {
-    dispatch({ type: "add", payload: { text } });
+  const addTodo = (todo: string) => {
+    fetch("https://dummyjson.com/todos/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ todo, completed: false, userId: 1 }),
+    })
+      .then((response) => response.json())
+      .then((todo) => {
+        dispatch({ type: "add", payload: { todo } });
+      });
   };
 
   // delete todo
-  const deleteTodo = (index) => {
-    dispatch({ type: "delete", payload: { index } });
+  const deleteTodo = (id: number) => {
+    
+    fetch(`https://dummyjson.com/todos/${id}`, {
+      method: "DELETE",
+    }).then(() => {
+      dispatch({ type: "delete", payload: { id } });
+    });
   };
 
-  // Complete todo
-  const completeTodo = ( index) => {
-    dispatch({ type: "complete", payload: { index } });
+  const completeTodo = (id: number) => {
+    const todo = todos.find((todo) => todo.id === id + 1);
+    if (!todo) return;
+    fetch(`https://dummyjson.com/todos/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: !todo.completed }),
+    })
+      .then((response) => response.json())
+      .then(() => {
+        dispatch({ type: "complete", payload: { id } });
+      });
   };
 
   //Edit todo
-  const editTodo = (text, index) => {
-    dispatch({ type: "edit", payload: { text, index } });
+  const editTodo = (id: number, todo: string) => {
+    fetch(`https://dummyjson.com/todos/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ todo }),
+    })
+      .then((response) => response.json())
+      .then(() => {
+        dispatch({ type: "edit", payload: { id, todo } });
+      });
   };
 
   //Open popup with info of todo
-  const openEditPopup = (todo, index) => {
-    setEditingTodo({ text: todo.text, index }); // set cai pop up edit co noi dung la noi dung todo o nut edit
+  const openEditPopup = (todo: Todo) => {
+    console.log(todo);
+    setEditingTodo({ id: todo.id, todo: todo.todo }); // set cai pop up edit co noi dung la noi dung todo o nut edit
     setIsEditPopupOpen(true); // set trang thai pop up thanh true de hien thi pop up
   };
-
   //close popup
   const closeEditPopup = () => {
     setIsEditPopupOpen(false); // set trang thai pop up thanh false de dong pop up
@@ -74,21 +124,28 @@ export default function Home() {
 
   //Save edit
   const saveEdit = () => {
-    editTodo(editingTodo.text, editingTodo.index); // dung ham editTodo o tren de luu lai todo voi text moi o index cu
-    closeEditPopup();
+    // console.log(editingTodo);
+    if (editingTodo) {
+      editTodo(editingTodo.id, editingTodo.todo); // dung ham editTodo o tren de luu lai todo voi text moi o id cu
+      closeEditPopup();
+    }
   };
 
+  
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="w-96 p-6 bg-white rounded-lg shadow-lg">
-        <h1 className="text-2xl font-bold mb-4">Todo App</h1>
-        <AddTodo addTodo={addTodo} />
-        <TodoList
-          todos={todos}
-          deleteTodo={deleteTodo}
-          completeTodo={completeTodo} // truyen ham completeTodo vao TodoList
-          openEditPopup={openEditPopup} // truyen ham  popup vao TodoList
-        />
+      <div>
+        <div className="w-96 p-6 bg-white rounded-lg shadow-lg">
+          <h1 className="text-2xl font-bold mb-4">Todo App</h1>
+          <AddTodo addTodo={addTodo} />
+          <TodoList
+            todos={todos}
+            deleteTodo={deleteTodo}
+            completeTodo={completeTodo} // truyen ham completeTodo vao TodoList
+            openEditPopup={openEditPopup} // truyen ham  popup vao TodoList
+          />
+        </div>
+       
       </div>
 
       {/* Popup Edit */}
@@ -98,13 +155,25 @@ export default function Home() {
             <h2 className="text-xl mb-4">Edit Todo</h2>
             <input
               type="text"
-              value={editingTodo?.text}
-              onChange={(e) => setEditingTodo({ ...editingTodo, text: e.target.value })}
+              value={editingTodo?.todo}
+              onChange={(e) =>
+                setEditingTodo({ ...editingTodo, todo: e.target.value })
+              }
               className="border p-2 w-full mb-4"
             />
             <div className="flex justify-between">
-              <button onClick={saveEdit} className="bg-blue-500 text-white px-4 py-2 rounded">Save</button>
-              <button onClick={closeEditPopup} className="bg-red-500 text-white px-4 py-2 rounded">Cancel</button>
+              <button
+                onClick={saveEdit}
+                className="bg-blue-500 text-white px-4 py-2 rounded"
+              >
+                Save
+              </button>
+              <button
+                onClick={closeEditPopup}
+                className="bg-red-500 text-white px-4 py-2 rounded"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

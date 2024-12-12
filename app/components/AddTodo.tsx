@@ -1,14 +1,18 @@
-"use client";
-import React, { useState } from "react";
+'use client'
+import React, { useState } from 'react';
 
-export default function AddTodo({ addTodo }) {
-  const [inputValue, setInputValue] = useState(""); // Luu gia tri nhap o input
+interface AddTodoProps {
+  addTodo: (text: string) => void;
+}
 
-  const handleSubmit = (e) => {
+export default function AddTodo({ addTodo }: AddTodoProps) {
+  const [inputValue, setInputValue] = useState(''); // Lưu giá trị nhập ở input
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (inputValue.trim()) {
-      addTodo(inputValue); // Goi ham addTodo khi nguoi dung nhan Submit
-      setInputValue(""); // Reset o input khi them todo
+      addTodo(inputValue); // Gọi hàm addTodo khi người dùng nhấn Submit
+      setInputValue(''); // Reset ô input khi thêm todo
     }
   };
 
@@ -17,14 +21,11 @@ export default function AddTodo({ addTodo }) {
       <input
         type="text"
         value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)} // cap nhat gia tri input
+        onChange={(e) => setInputValue(e.target.value)} // Cập nhật giá trị input
         className="border p-2 w-full mb-2"
         placeholder="Add a new todo"
       />
-      <button
-        type="submit"
-        className="bg-blue-500 text-white w-full p-2 rounded"
-      >
+      <button type="submit" className="bg-blue-500 text-white w-full p-2 rounded">
         Add Todo
       </button>
     </form>

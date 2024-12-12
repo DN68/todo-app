@@ -3,12 +3,27 @@
 import React from "react";
 const now = new Date();
 
+interface Todo {
+  id: number;
+  todo: string;
+  completed: boolean;
+  userId: number;
+}
+
+interface TodoListProps {
+  todos: Todo[];
+  deleteTodo: (id: number) => void;
+  completeTodo: (id: number) => void;
+  openEditPopup: (todo: Todo, id : number) => void;
+}
+
 export default function TodoList({
   todos,
   deleteTodo,
   completeTodo,
   openEditPopup,
-}) {
+} : TodoListProps) {
+  console.log(todos);
   return (
     <div>
       {/* Header */}
@@ -22,21 +37,22 @@ export default function TodoList({
       <ul className="space-y-2">
         {/* Duyet qua todos và hien thi tung todo */}
 
-        {todos.map((todo, index) => (
+        {todos.map((todo, id) => (
           <li
-            key={index}
+            key={id}
             className={`flex justify-between items-center p-2  bg-white flex-1 overflow-hidden`}
           >
             <span
-              onClick={() => completeTodo(index)} // danh dau hoan thanh khi click vao todo
+              onClick={() => completeTodo(id)} // danh dau hoan thanh khi click vao todo
               className={`cursor-pointer flex-1 overflow-hidden ${
                 todo.completed ? "line-through" : ""
               } `} // Gach ngang todo da hoan thanh
+              style={{ display: 'flex', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
             >
-              {todo.text}
+              {todo.todo}
             </span>
             <span
-              onClick={() => completeTodo(index)}
+              onClick={() => completeTodo(id)}
               className="text-xs px-2 font-bold"
             >
               {todo.completed
@@ -46,7 +62,7 @@ export default function TodoList({
             <div className="flex space-x-2">
               {/* Nut edit */}
               <button
-                onClick={() => openEditPopup(todo, index)}
+                onClick={() => openEditPopup(todo, id)}
                 className="bg-yellow-500 text-white px-2 ml-2 py-1 rounded"
                 disabled = {todo.completed} // disable edit neu completed task
               >
@@ -54,14 +70,14 @@ export default function TodoList({
               </button>
               {/* Nut Delete  */}
               <button
-                onClick={() => deleteTodo(index)}
+                onClick={() => deleteTodo(id)}
                 className="bg-red-500 text-white px-2 py-1 rounded"
               >
                 Delete
               </button>
               {/* nut hoan thanh */}
               <button
-                onClick={() => completeTodo(index)} // bam vao nut hoan thanh
+                onClick={() => completeTodo(id)} // bam vao nut hoan thanh
                 className={`bg-blue-500 text-white px-2 py-1 w-20 rounded ${
                   todo.completed ? "bg-gray-500" : "bg-blue-500"
                 }`}
